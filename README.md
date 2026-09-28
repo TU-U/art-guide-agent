@@ -1,4 +1,4 @@
-# VL-RAG Agent
+# Art Guide Agent
 
 > 让机器人不只“看图回答”，而是能够把语音、视觉、记忆与现场事件组织成可解释、可演进的交互闭环。
 
@@ -7,7 +7,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20%26%20debugging-009688?logo=fastapi&logoColor=white)
 ![Status](https://img.shields.io/badge/status-research%20prototype-F59E0B)
 
-**VL-RAG Agent** 是一个面向展厅、实验室和桌面机器人场景的多模态交互系统。它将语音输入、相机画面、视觉指向、领域知识与会话记忆接入同一条机器人交互链路；同时为后续的 World Model、任务规划和可验证操控预留明确边界。
+**Art Guide Agent** 是一个面向展厅、实验室和桌面机器人场景的多模态交互系统。它将语音输入、相机画面、视觉指向、领域知识与会话记忆接入同一条机器人交互链路；同时为后续的 World Model、任务规划和可验证操控预留明确边界。VL-RAG 是其多模态检索与交互技术路线。
 
 | Problem | Solution | Value |
 | --- | --- | --- |
@@ -45,7 +45,7 @@ Many “robot + LLM” demos stop at a serial pipeline: **detect something → t
 - a person enters the scene and the robot should react once, not once per video frame;
 - the system later needs to turn “put the apple in the basket” into observable, verifiable steps.
 
-VL-RAG Agent treats language models as **semantic reasoning and interaction components**, not as the source of all real-time physical truth. Vision is converted into snapshots or events; conversation is kept within a bounded session; durable information is written deliberately; and the path toward structured world state is explicit.
+Art Guide Agent treats language models as **semantic reasoning and interaction components**, not as the source of all real-time physical truth. Vision is converted into snapshots or events; conversation is kept within a bounded session; durable information is written deliberately; and the path toward structured world state is explicit.
 
 ## What works today
 
