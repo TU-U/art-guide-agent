@@ -1,116 +1,116 @@
-# Art Guide Agent
+# Art Guide Agent｜多模态机器人导览智能体
 
-> 让机器人不只“看图回答”，而是能够把语音、视觉、记忆与现场事件组织成可解释、可演进的交互闭环。
+> 让机器人不只“看图回答”，而是能将语音、视觉、记忆与现场事件组织为可解释、可演进的交互闭环。
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![ROS 2](https://img.shields.io/badge/ROS%202-Humble%20%7C%20compatible-22314E?logo=ros&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-API%20%26%20debugging-009688?logo=fastapi&logoColor=white)
-![Status](https://img.shields.io/badge/status-research%20prototype-F59E0B)
+![ROS 2](https://img.shields.io/badge/ROS%202-Humble%20%7C%20兼容-22314E?logo=ros&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-接口与调试-009688?logo=fastapi&logoColor=white)
+![状态](https://img.shields.io/badge/状态-研究原型-F59E0B)
 
-**Art Guide Agent** 是一个面向展厅、实验室和桌面机器人场景的多模态交互系统。它将语音输入、相机画面、视觉指向、领域知识与会话记忆接入同一条机器人交互链路；同时为后续的 World Model、任务规划和可验证操控预留明确边界。VL-RAG 是其多模态检索与交互技术路线。
+**Art Guide Agent** 是一个面向展厅、实验室与桌面机器人场景的多模态交互系统。它将语音输入、相机画面、用户指向、领域知识与会话记忆接入同一条机器人交互链路，并为后续的世界模型（World Model）、任务规划与可验证操控预留清晰边界。项目采用视觉语言检索增强（VL-RAG）作为多模态理解与知识问答路线。
 
-| Problem | Solution | Value |
+| 核心问题 | 项目方案 | 产生价值 |
 | --- | --- | --- |
-| 传统机器人问答无法理解“这个”“刚才那个”，每轮交互彼此割裂；把视频流逐帧丢给 LLM 又慢且不可控。 | 用**事件驱动感知**沉淀结构化事实，以“当前会话上下文 + 按需长期记忆 + 图文问答”组织一次交互。 | 机器人能在视觉异常时降级为语音对话，在多轮交流中保持上下文，并为后续具身任务提供可观测的数据入口。 |
+| 传统机器人问答无法理解“这个”“刚才那个”，每轮交互彼此割裂；把视频流逐帧交给大模型又会带来高延迟和失控风险。 | 以**事件驱动感知**沉淀结构化事实，并使用“当前会话上下文 + 按需长期记忆 + 图文问答”组织单轮交互。 | 机器人能够在视觉异常时稳定退回语音对话，在多轮交流中保持上下文，并为后续具身任务提供可观测的数据入口。 |
 
 ```text
-          ┌─────────────── Input ────────────────┐
-          │  ASR · Camera · RGB-D · Pointing     │
-          └──────────────────┬───────────────────┘
-                             │
-                  ┌──────────▼──────────┐
-                  │  Robot Interaction  │
-                  │  routing · context  │
-                  └───────┬───────┬─────┘
-                          │       │
-          ┌───────────────▼──┐ ┌──▼────────────────┐
-          │ VLM / LLM / RAG  │ │ Memory             │
-          │ multimodal reply │ │ session · facts    │
-          └───────────────┬──┘ └──┬────────────────┘
-                          │       │
-                    ┌─────▼───────▼─────┐
-                    │ TTS · Web Debug   │
-                    └───────────────────┘
+          ┌────────────── 输入层 ───────────────┐
+          │  ASR · Camera · RGB-D · Pointing    │
+          └─────────────────┬───────────────────┘
+                            │
+                  ┌─────────▼──────────┐
+                  │  机器人交互中枢     │
+                  │  路由 · 上下文管理  │
+                  └──────┬───────┬─────┘
+                         │       │
+          ┌──────────────▼──┐ ┌──▼────────────────┐
+          │ VLM / LLM / RAG │ │ 记忆系统            │
+          │ 多模态理解与回复 │ │ 会话 · 事实 · 事件  │
+          └──────────────┬──┘ └──┬────────────────┘
+                         │       │
+                    ┌────▼───────▼─────┐
+                    │ TTS · Web 调试页 │
+                    └──────────────────┘
 
-  Evolution path: perception events → World Model → BT / ROS Actions → MoveIt
+  演进路线：感知事件 → World Model → 行为树 / ROS Action → MoveIt
 ```
 
-## Why this project
+## 项目要解决什么问题
 
-Many “robot + LLM” demos stop at a serial pipeline: **detect something → turn it into text → ask a model → speak**. This is useful for a one-off explanation, but it fails as soon as interaction becomes continuous:
+不少“机器人 + 大模型”演示仍是串行链路：**检测物体 → 转成文字 → 询问模型 → 语音播报**。这足以完成一次性讲解，但连续真实交互会很快暴露局限：
 
-- a user asks “what is this?” while pointing at a real object;
-- a camera frame is stale or unavailable;
-- a user corrects the robot and expects it to remember;
-- a person enters the scene and the robot should react once, not once per video frame;
-- the system later needs to turn “put the apple in the basket” into observable, verifiable steps.
+- 用户指着实物问“这是什么”，系统不知道“这”指向哪里；
+- 相机画面已经过期，模型却仍把它当作当前现场回答；
+- 用户纠正机器人后，希望它在后续对话中记住；
+- 有人进入画面时，机器人应该只响应一次，而非每一帧都触发；
+- 后续若要完成“把苹果放进篮子”，系统必须能把语言拆成可观察、可验证的步骤。
 
-Art Guide Agent treats language models as **semantic reasoning and interaction components**, not as the source of all real-time physical truth. Vision is converted into snapshots or events; conversation is kept within a bounded session; durable information is written deliberately; and the path toward structured world state is explicit.
+Art Guide Agent 将大模型定位为**语义理解与交互组件**，而不是实时物理事实的唯一来源：视觉被转为快照或事件；对话被限制在有边界的会话内；持久信息被有条件地写入；而迈向结构化世界状态的路径被明确保留。
 
-## What works today
+## 当前已具备的能力
 
-| Capability | What it does | Main implementation |
+| 能力 | 作用 | 主要实现 |
 | --- | --- | --- |
-| Multimodal dialogue | Selects text or image+text input according to fresh visual input and returns a grounded reply. | `main.py`, `local_model_processor.py`, `services/vlm_service.py` |
-| Robot voice loop | Receives ASR text through ROS, filters echoes/repeats, streams replies, and queues TTS to avoid audio overlap. | `local_model_processor.py`, `services/` |
-| Session-aware memory | Keeps bounded in-session history; writes explicitly taught facts immediately; recalls long-term memory only for historical intent; consolidates sessions on idle/end. | `memory/` |
-| RAG as an optional tool | Retrieves stable domain knowledge instead of treating it as real-time environmental state. | `rag/` |
-| Pointing prototype | Uses RGB-D, hand landmarks, YOLO boxes, and a 3D ray to identify the likely pointed object and emit a debug snapshot/JSON result. | `point/` |
-| Person-presence prototype | Uses webcam person tracking to convert continuous video into enter/exit events, SQLite history, and an optional cooldown-protected greeting. | `person_presence/` |
-| Debug surfaces | Exposes chat, memory, TTS and perception state through FastAPI pages/APIs for onsite debugging. | `main.py`, `frontend/`, `person_presence/app.py` |
+| 多模态对话 | 根据视觉输入是否新鲜，自动选择纯文本或图文输入，并生成基于画面的回复。 | `main.py`、`local_model_processor.py`、`services/vlm_service.py` |
+| 机器人语音链路 | 通过 ROS 接收 ASR 文本，过滤回声和重复输入，流式切句并以单队列 TTS 避免抢播。 | `local_model_processor.py`、`services/` |
+| 会话记忆 | 保留有边界的会话历史；立即写入明确教学事实；仅在具有历史意图时召回长期记忆；会话结束或空闲时统一沉淀。 | `memory/` |
+| 可选 RAG 知识检索 | 用于检索稳定的领域知识，而不是把它误当作实时环境状态。 | `rag/` |
+| 用户指向识别原型 | 结合 RGB-D、手部关键点、YOLO 检测框与三维射线，识别用户可能指向的目标，输出调试快照与 JSON。 | `point/` |
+| 人员在场感知原型 | 用摄像头人员追踪把连续视频转为进入/离开事件，记录 SQLite 历史，并提供带冷却机制的可选问候。 | `person_presence/` |
+| 调试界面与接口 | 通过 FastAPI 暴露对话、记忆、TTS 与感知状态，便于现场排障。 | `main.py`、`frontend/`、`person_presence/app.py` |
 
-## Architecture
+## 系统架构
 
-### Runtime interaction path
+### 运行时交互链路
 
 ```text
-User speech
-  → ASR / HTTP input
-  → Robot Brain
-      ├─ remove empty, duplicate and TTS-echo inputs
-      ├─ record current turn and deterministic user facts
-      ├─ load bounded session context
-      ├─ recall long-term memory only when intent requires it
-      └─ decide whether the latest visual frame is fresh
-  → VLM / LLM (+ optional RAG context)
-  → sentence streaming and single-worker TTS queue
-  → robot audio + Web debugging state
+用户语音
+  → ASR / HTTP 输入
+  → 机器人中枢
+      ├─ 过滤空输入、重复输入与 TTS 回声
+      ├─ 记录本轮对话与可确定的用户教学事实
+      ├─ 读取有长度限制的当前会话上下文
+      ├─ 仅在意图需要时召回长期记忆
+      └─ 判断最新视觉帧是否仍属于本轮交互
+  → VLM / LLM（可选附加 RAG 上下文）
+  → 流式切句与单工作线程 TTS 队列
+  → 机器人音频输出 + Web 调试状态
 ```
 
-### Perception and future embodiment path
+### 感知与具身能力演进链路
 
 ```text
 Camera / RGB-D
-  → detection · tracking · hand/pointing geometry
-  → structured observations and events
-  → World Model (planned shared state)
-  → Behavior Tree / ROS Action (planned task execution)
-  → MoveIt / gripper / verification (planned physical control)
+  → 检测 · 跟踪 · 手势/指向几何计算
+  → 结构化观测与事件
+  → World Model（规划中：共享世界状态）
+  → 行为树 / ROS Action（规划中：任务执行）
+  → MoveIt / 夹爪 / 结果验证（规划中：物理控制）
 ```
 
-The repository **does not yet implement** a shared World Model, Behavior Tree executor, MoveIt integration, or autonomous pick-and-place. The existing `point/` and `person_presence/` modules are deliberately isolated prototypes and should become observation adapters when the World Model contract is introduced. See [the robot-agent research draft](docs/robot_agent_research_draft.md) for the target design and milestones.
+目前仓库**尚未实现**共享 World Model、行为树执行器、MoveIt 集成或自主抓取放置。现有 `point/` 与 `person_presence/` 都是刻意隔离的感知原型；后续引入 World Model 契约后，它们应成为统一的观测适配器，而不是直接承担任务决策。目标设计与分期计划见[机器人 Agent 调研与实施初稿](docs/robot_agent_research_draft.md)。
 
-## Repository map
+## 目录说明
 
 ```text
 .
-├── main.py                    # FastAPI chat, memory and TTS debugging APIs
-├── local_model_processor.py   # ROS robot brain / streaming interaction loop
-├── services/                  # ASR, visual input, VLM/LLM and TTS adapters
-├── memory/                    # short-term session, facts, insights, events, summaries
-├── rag/                       # optional domain knowledge retrieval
-├── point/                     # RGB-D hand-pointing and 3D ray prototype
-├── person_presence/           # webcam person event and social-greeting prototype
-├── prompts/                   # interaction and persona prompts
-├── frontend/                  # local debugging UI
-├── docs/                      # architecture decisions and research notes
-├── tests/                     # prototype unit tests
-└── vl_rag_system_v1/          # historical/parallel implementation kept for reference
+├── main.py                    # FastAPI：对话、记忆与 TTS 调试接口
+├── local_model_processor.py   # ROS 机器人中枢与流式交互循环
+├── services/                  # ASR、视觉输入、VLM/LLM、TTS 适配层
+├── memory/                    # 会话、事实、洞察、事件与摘要记忆
+├── rag/                       # 可选领域知识检索
+├── point/                     # RGB-D 手势指向与三维射线原型
+├── person_presence/           # 摄像头人员事件与主动问候原型
+├── prompts/                   # 交互与人设提示词
+├── frontend/                  # 本地调试页面
+├── docs/                      # 架构决策与调研文档
+├── tests/                     # 原型单元测试
+└── vl_rag_system_v1/          # 保留的历史/并行版本，供迁移参考
 ```
 
-## Quick start
+## 快速开始
 
-### 1. Prepare a Python environment
+### 1. 准备 Python 环境
 
 ```bash
 python3 -m venv venv
@@ -118,104 +118,104 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-For the web/memory path without ROS or hand-pointing dependencies, use:
+如果只需要 Web、记忆和模型调用链路，不需要 ROS 或手势指向依赖，可使用：
 
 ```bash
 pip install -r requirements-main.txt
 ```
 
-ROS packages such as `rclpy`, `cv_bridge`, `sensor_msgs` and `message_filters` are provided by your ROS 2 installation, not by pip.
+`rclpy`、`cv_bridge`、`sensor_msgs`、`message_filters` 等 ROS 包由 ROS 2 安装环境提供，而不是通过 pip 安装。
 
-### 2. Configure local credentials
+### 2. 配置本地凭据
 
-Create a local `.env` file. It is ignored by Git and must never be committed.
+在根目录创建 `.env`。该文件已被 Git 忽略，**不得提交**。
 
 ```dotenv
-# Select qwen_omni or deepseek
+# 可选 qwen_omni 或 deepseek
 VLM_PROVIDER=qwen_omni
-DASHSCOPE_API_KEY=replace_with_your_key
+DASHSCOPE_API_KEY=替换为你的密钥
 
-# Optional, required for Xunfei TTS
+# 可选：启用讯飞 TTS 时填写
 XF_APPID=
 XF_API_KEY=
 XF_API_SECRET=
 ```
 
-See [`config.py`](config.py) for all supported environment variables. Keep model weights under `models/` and runtime data under `data/`; both paths are intentionally excluded from version control.
+其他可配置项见 [`config.py`](config.py)。模型权重请放在 `models/`，运行数据放在 `data/`；二者均被排除在版本控制之外。
 
-### 3. Run the Web debug backend
+### 3. 启动 Web 调试后端
 
 ```bash
 python3 main.py
 ```
 
-Open `http://127.0.0.1:8765/` (or the configured `BACKEND_PORT`). The backend provides `/chat`, `/memory/*`, and `/api/tts/*` endpoints.
+访问 `http://127.0.0.1:8765/`（或 `BACKEND_PORT` 指定的端口）。后端提供 `/chat`、`/memory/*` 与 `/api/tts/*` 等接口。
 
-### 4. Run the ROS interaction loop (optional)
+### 4. 启动 ROS 交互链路（可选）
 
-After sourcing your ROS 2 environment and bringing up compatible ASR/camera topics:
+加载 ROS 2 环境，并确保 ASR、相机话题与目标硬件匹配后执行：
 
 ```bash
 ./start_all.sh
 ```
 
-The root startup script launches ASR, visual input and the robot brain. Hardware-specific topics, camera drivers and playback configuration must match the target robot deployment.
+根目录脚本会启动 ASR、视觉输入和机器人中枢。相机驱动、话题名及音频播放配置需按实际机器人部署环境调整。
 
-### 5. Run the person-presence prototype (optional)
+### 5. 启动人员在场感知原型（可选）
 
 ```bash
 python3 -m person_presence
 ```
 
-Open `http://127.0.0.1:8090`. The first YOLO run may download a model weight. This prototype requires a camera and the vision dependencies from `requirements.txt`.
+访问 `http://127.0.0.1:8090`。首次运行 YOLO 可能下载模型权重；该原型需要摄像头及 `requirements.txt` 中的视觉依赖。
 
-## Development and verification
+## 开发与验证
 
 ```bash
-# Unit tests for presence state/event logic
+# 人员在场状态机、SQLite 与冷却逻辑测试
 python3 -m unittest discover -s tests -v
 
-# Syntax check for core modules
+# 核心模块语法检查
 python3 -m compileall -q memory person_presence point main.py local_model_processor.py
 ```
 
-Before a hardware experiment, validate in this order:
+建议按以下顺序完成硬件测试：
 
-1. Web chat and memory behavior with no camera;
-2. fresh/stale image fallback with a recorded image source;
-3. perception event stability with replayed frames;
-4. ROS topics, TTS playback and timing on the target machine.
+1. 不接相机时验证 Web 对话和记忆行为；
+2. 用录制图片源验证新鲜/过期视觉帧的降级逻辑；
+3. 用回放帧验证感知事件的稳定性；
+4. 在目标机器上联调 ROS 话题、TTS 播放与端到端时延。
 
-## Design principles
+## 设计原则
 
-- **Freshness before fluency** — a stale frame should not silently answer a current-world question.
-- **Events over raw video for reasoning** — language models receive concise, auditable facts rather than a continuous camera stream.
-- **Memory is not world state** — memory stores past interactions and learned facts; physical state needs time, confidence and evidence.
-- **Graceful degradation** — failure of camera or detection must not break ordinary voice interaction.
-- **Verification before autonomy** — physical execution should be confirmed by new observations, not assumed from a generated response.
-- **Privacy by design** — person presence tracks temporary camera IDs, not names or face embeddings; identity requires informed consent and a separate design.
+- **先确认新鲜度，再追求表达流畅**：过期画面不能被悄悄当成当前现场回答。
+- **让事件进入推理，而不是让原始视频流进入推理**：大模型接收简洁、可审计的事实，而不是连续视频帧。
+- **记忆不等于世界状态**：记忆保存过去交互与经验；物理状态必须带有时间、置信度与观测证据。
+- **稳定降级**：相机或检测服务异常时，普通语音交互不能随之中断。
+- **验证优先于自主性**：物理动作完成与否应由新观测确认，而不是由模型生成文本推断。
+- **隐私优先**：人员感知只使用临时相机轨迹 ID，不保存姓名或人脸特征；身份关联必须有用户知情同意和独立方案。
 
-## Roadmap
+## 路线图
 
-- [x] Voice, visual question answering, optional RAG, memory and TTS interaction loop
-- [x] Webcam person-enter/exit event prototype
-- [x] RGB-D pointing prototype
-- [ ] Shared World Model contract for people, objects, relations and observations
-- [ ] RGB-D object tracking, stable object IDs and 3D pose fusion
-- [ ] ROS Action interfaces: `Observe`, `FindObject`, `Pick`, `Place`, `Verify`
-- [ ] Behavior Tree task executor and simulation baseline
-- [ ] Fixed-table “apple into basket” verification MVP with MoveIt
+- [x] 语音、图文问答、可选 RAG、记忆和 TTS 交互闭环
+- [x] 摄像头人员进入/离开事件原型
+- [x] RGB-D 用户指向识别原型
+- [ ] 定义人员、物体、关系与观测证据的共享 World Model 契约
+- [ ] RGB-D 物体跟踪、稳定对象 ID 与三维位姿融合
+- [ ] `Observe`、`FindObject`、`Pick`、`Place`、`Verify` 等 ROS Action
+- [ ] 行为树任务执行器与仿真基线
+- [ ] 基于 MoveIt 的固定桌面“苹果入篮”验证型 MVP
 
-## Documentation
+## 相关文档
 
-- [Robot Agent architecture discussion](docs/2026-08-10_robot_agent_discussion.md)
-- [Robot Agent research and implementation draft](docs/robot_agent_research_draft.md)
-- [Person-presence prototype guide](docs/person_presence_prototype.md)
+- [机器人 Agent 架构讨论纪要](docs/2026-08-10_robot_agent_discussion.md)
+- [机器人 Agent 调研与实施初稿](docs/robot_agent_research_draft.md)
+- [人员在场感知原型说明](docs/person_presence_prototype.md)
 
-## Contributing
+## 参与贡献
 
-This repository is in an experimental stage. Issues and pull requests are welcome, especially for reproducible perception benchmarks, ROS integration, replayable datasets, World Model contracts, and test coverage. Please avoid committing API credentials, model weights, camera recordings, or generated runtime data.
+项目仍处于研究原型阶段，欢迎提交 Issue 和 Pull Request，尤其欢迎：可复现实验数据、感知基准、ROS 集成、回放数据集、World Model 契约以及测试覆盖改进。请勿提交 API 密钥、模型权重、摄像头录制内容或运行时生成数据。
 
-## License
+## 开源许可
 
-The source repository currently does not include a license file. Add an explicit `LICENSE` before distributing or accepting third-party contributions under defined terms.
+当前仓库尚未包含 `LICENSE` 文件。在公开分发或接受第三方贡献前，请补充明确的开源许可协议。
