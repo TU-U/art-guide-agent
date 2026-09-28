@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记忆系统 · 测试台</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --paper: #fbf8f2;
+            --panel: rgba(255, 252, 245, 0.9);
+            --line: rgba(92, 72, 43, 0.16);
+            --text: #2f2418;
+            --muted: #6f6356;
+            --accent: #8a4f1d;
+            --accent-strong: #68360f;
+            --success: #2f7a53;
+            --error: #b44532;
+            --code-bg: rgba(92, 72, 43, 0.06);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "Noto Serif SC", "Source Han Serif SC", "PingFang SC", serif;
+            background:
+                radial-gradient(circle at top left, rgba(214, 184, 146, 0.35), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(161, 109, 53, 0.18), transparent 22%),
+                linear-gradient(180deg, #f7f1e7 0%, var(--bg) 100%);
+            padding: 24px;
+        }
+
+        .shell {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header.hero {
+            padding: 28px 32px;
+            border-radius: 20px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            margin-bottom: 24px;
+            box-shadow: 0 16px 40px rgba(74, 52, 26, 0.08);
+        }
+
+        header.hero .eyebrow {
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        header.hero h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        header.hero p {
+            margin: 10px 0 0;
+            color: var(--muted);
+            max-width: 760px;
+            line-height: 1.8;
+            font-size: 14px;
+        }
+
+        .global-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+            align-items: center;
+        }
+
+        .global-bar label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .global-bar input {
+            padding: 6px 10px;
+            font-size: 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            font-family: inherit;
+            width: 160px;
+        }
+
+        .chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            font-size: 12px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .chip.online { color: var(--success); border-color: rgba(47, 122, 83, 0.28); background: rgba(47, 122, 83, 0.08); }
+        .chip.offline { color: var(--error); border-color: rgba(180, 69, 50, 0.28); background: rgba(180, 69, 50, 0.1); }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 980px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 22px 22px 18px;
+            box-shadow: 0 14px 36px rgba(74, 52, 26, 0.07);
+        }
+
+        .card h2 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .card h2 small {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--muted);
+            font-family: "JetBrains Mono", "Consolas", monospace;
+        }
+
+        .card .hint {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .row input, .row select, .row textarea {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #fff;
+            font: inherit;
+            font-size: 14px;
+            color: var(--text);
+            resize: vertical;
+        }
+
+        .row textarea {
+            min-height: 70px;
+        }
+
+        .row button {
+            padding: 8px 16px;
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            font: inherit;
+            cursor: pointer;
+            transition: transform 0.15s, background 0.15s;
+        }
+
+        .row button:hover { background: var(--accent-strong); transform: translateY(-1px); }
+        .row button.ghost { background: rgba(255, 255, 255, 0.6); color: var(--text); border-color: var(--line); }
+        .row button.ghost:hover { background: #fff; }
+        .row button.danger { background: #fff; color: var(--error); border-color: rgba(180, 69, 50, 0.4); }
+        .row button.danger:hover { background: rgba(180, 69, 50, 0.08); }
+
+        pre.output {
+            background: var(--code-bg);
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-family: "JetBrains Mono", "Consolas", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 260px;
+            overflow: auto;
+            color: #3a2e1e;
+            margin: 10px 0 0;
+        }
+
+        pre.output.empty { color: var(--muted); font-style: italic; }
+
+        .turn-item {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .turn-item .role {
+            font-weight: 600;
+            color: var(--accent);
+            margin-right: 8px;
+        }
+
+        .insight-item {
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .insight-item .topic {
+            color: var(--accent);
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .insight-item .meta {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+            font-family: "JetBrains Mono", monospace;
+        }
+
+        .insight-item .delete-btn {
+            float: right;
+            border: none;
+            background: none;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .back-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .back-link:hover { text-decoration: underline; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(138, 79, 29, 0.1);
+            color: var(--accent);
+            font-size: 11px;
+            font-family: "JetBrains Mono", monospace;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="shell">
+        <header class="hero">
+            <div class="eyebrow">Memory System · Test Console</div>
+            <h1>记忆系统测试台</h1>
+            <p>
+                这个页面直接调用后端 <code>/memory/*</code> 端点，独立于 <code>/chat</code> 主链路，用于验证短时记忆 / 长期见解 / 群体画像三路模块是否按架构设计工作。后端以 <code>python main.py</code> 启动后打开本页即可测试。
+            </p>
+            <div class="global-bar">
+                <label>backend:</label>
+                <input v-model="backend" placeholder="http://localhost:8765" />
+                <label>session_id:</label>
+                <input v-model="sessionId" />
+                <label>user_id:</label>
+                <input v-model="userId" />
+                <button class="row" style="padding:6px 14px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;" @click="refreshStats">刷新状态</button>
+                <span :class="['chip', statsOk ? 'online' : 'offline']">{{ statsText }}</span>
+                <a href="index.html" class="back-link">← 返回主页</a>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- 短时记忆 -->
+            <section class="card">
+                <h2>短时记忆 <small>ShortTermMemory · /memory/turn · /memory/history</small></h2>
+                <p class="hint">按 session_id 分桶写入 / 读取。每次写入后后端立即原子落盘到 <code>data/memory/sessions/{session}.json</code>。</p>
+                <div class="row">
+                    <select v-model="turnRole" style="max-width:130px">
+                        <option value="user">user</option>
+                        <option value="assistant">assistant</option>
+                        <option value="system">system</option>
+                    </select>
+                    <textarea v-model="turnContent" placeholder="输入一轮对话内容"></textarea>
+                </div>
+                <div class="row">
+                    <button @click="addTurn">写入一轮</button>
+                    <button class="ghost" @click="refreshHistory">读取本 session 历史</button>
+                    <button class="ghost" @click="listSessions">列出所有 session</button>
+                    <button class="danger" @click="clearSession">清空本 session</button>
+                </div>
+                <div v-if="history.length">
+                    <div class="turn-item" v-for="(t, i) in history" :key="i">
+                        <span class="role">[{{ t.role }}]</span>{{ t.content }}
+                    </div>
+                </div>
+                <pre class="output" :class="{empty: !historyRaw}">{{ historyRaw || '(尚未读取)' }}</pre>
+            </section>
+
+            <!-- 多路 recall -->
+            <section class="card">
+                <h2>多路召回 <small>MemoryHub.recall · /memory/recall</small></h2>
+                <p class="hint">聚合短时历史 + 见解库 + 群体画像，返回 <code>combined_context</code>。把它贴进 LLM prompt 就是完整的"记忆注入"。</p>
+                <div class="row">
+                    <input v-model="recallQuery" placeholder="query，例如：永栖所的作者" />
+                    <input v-model.number="recallTopK" type="number" min="1" max="10" style="max-width:100px" />
+                </div>
+                <div class="row">
+                    <input v-model="recallFeatures" placeholder='tags，如 极客,参数党 或 {"tags":["极客"]}' />
+                    <button @click="doRecall">召回</button>
+                </div>
+                <pre class="output" :class="{empty: !recallResult}">{{ recallResult || '(尚未召回)' }}</pre>
+            </section>
+
+            <!-- 内省抽取 -->
+            <section class="card">
+                <h2>异步内省 <small>InsightExtractor · /memory/reflect</small></h2>
+                <p class="hint">把当前 session 最近 10 轮对话扔给 LLM，让它按 <code>prompts/insight_extraction.md</code> 抽见解。抽到的 insight 会自动 upsert 到 <code>insight_archive</code>。</p>
+                <div class="row">
+                    <input v-model="reflectTopic" placeholder="topic_subject (可留空)" />
+                    <button @click="doReflect">触发内省</button>
+                </div>
+                <pre class="output" :class="{empty: !reflectResult}">{{ reflectResult || '(尚未触发)' }}</pre>
+            </section>
+
+            <!-- 见解库 -->
+            <section class="card">
+                <h2>见解库 <small>InsightArchive · /memory/insights/{user_id}</small></h2>
+                <p class="hint">按 user_id 列出所有已持久化的见解（ChromaDB 向量库）。可单条删除。</p>
+                <div class="row">
+                    <button @click="listInsights">列出当前用户见解</button>
+                </div>
+                <div v-if="insights.length">
+                    <div class="insight-item" v-for="i in insights" :key="i.insight_id">
+                        <button class="delete-btn" @click="deleteInsight(i.insight_id)">删除</button>
+                        <span class="topic">{{ i.topic || '-' }}</span>{{ i.content }}
+                        <div class="meta">
+                            <span class="badge">id: {{ i.insight_id.slice(0,8) }}</span>
+                            <span>entities: {{ (i.key_entities || []).join('/') || '-' }}</span>
+                            <span>session: {{ i.session_id || '-' }}</span>
+                            <span>ts: {{ i.timestamp }}</span>
+                        </div>
+                    </div>
+                </div>
+                <pre class="output" :class="{empty: !insights.length && insightRaw === ''}">{{ insights.length ? '' : (insightRaw || '(尚未读取)') }}</pre>
+            </section>
+
+            <!-- 群体画像 -->
+            <section class="card">
+                <h2>群体画像 <small>UserGroupProfiles · /memory/groups · /memory/group/match</small></h2>
+                <p class="hint">基于 typical_tags 做关键词评分。填入用户特征 JSON 即可返回最匹配的群体。</p>
+                <div class="row">
+                    <button @click="listGroups">列出所有群体</button>
+                </div>
+                <div class="row">
+                    <input v-model="matchFeatures" placeholder='tags，如 亲子,儿童 或 {"tags":["亲子"]}' />
+                    <button @click="doMatchGroup">匹配群体</button>
+                </div>
+                <pre class="output" :class="{empty: !groupResult}">{{ groupResult || '(尚未调用)' }}</pre>
+            </section>
+
+            <!-- 状态/调试 -->
+            <section class="card">
+                <h2>系统状态 <small>/memory/stats</small></h2>
+                <p class="hint">记忆 Hub 整体统计：session 数、insight 总量、嵌入模式（Qwen3 / fallback）、extractor 是否绑定。</p>
+                <div class="row">
+                    <button @click="refreshStats">刷新</button>
+                </div>
+                <pre class="output" :class="{empty: !statsRaw}">{{ statsRaw || '(尚未调用)' }}</pre>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, computed } = Vue;
+    createApp({
+        setup() {
+            const defaultBackend = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+                ? window.location.origin
+                : 'http://localhost:8765';
+            const backend = ref(defaultBackend);
+            const sessionId = ref('demo_session');
+            const userId = ref('demo_user');
+
+            const turnRole = ref('user');
+            const turnContent = ref('');
+            const history = ref([]);
+            const historyRaw = ref('');
+
+            const recallQuery = ref('');
+            const recallTopK = ref(3);
+            const recallFeatures = ref('');
+            const recallResult = ref('');
+
+            const reflectTopic = ref('');
+            const reflectResult = ref('');
+
+            const insights = ref([]);
+            const insightRaw = ref('');
+
+            const matchFeatures = ref('');
+            const groupResult = ref('');
+
+            const statsRaw = ref('');
+            const statsOk = ref(false);
+
+            const statsText = computed(() => statsOk.value ? '后端已连通' : '后端未连通');
+
+            function url(path) {
+                return backend.value.replace(/\/$/, '') + path;
+            }
+
+            async function call(path, opts = {}) {
+                try {
+                    const res = await fetch(url(path), {
+                        headers: { 'Content-Type': 'application/json' },
+                        ...opts,
+                    });
+                    const text = await res.text();
+                    let data;
+                    try { data = JSON.parse(text); } catch { data = text; }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}: ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+                    return data;
+                } catch (exc) {
+                    return { status: 'error', message: String(exc) };
+                }
+            }
+
+            function pretty(obj) {
+                return JSON.stringify(obj, null, 2);
+            }
+
+            // 容错解析 user_features：
+            //   - 合法 JSON 对象：直接用
+            //   - 其它：按 中文逗号/顿号/英文逗号/空格 切分成 tags
+            //   - 空串：返回 null
+            function parseFeatures(text) {
+                const trimmed = (text || '').trim();
+                if (!trimmed) return { value: null };
+                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                    try {
+                        return { value: JSON.parse(trimmed) };
+                    } catch (exc) {
+                        return { error: 'JSON 解析失败: ' + exc.message };
+                    }
+                }
+                const tokens = trimmed.split(/[，、,\s]+/).map(s => s.trim()).filter(Boolean);
+                return { value: { tags: tokens } };
+            }
+
+            async function refreshStats() {
+                const data = await call('/memory/stats');
+                statsRaw.value = pretty(data);
+                statsOk.value = data.status === 'ok';
+            }
+
+            async function addTurn() {
+                if (!turnContent.value.trim()) return;
+                const data = await call('/memory/turn', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        session_id: sessionId.value,
+                        role: turnRole.value,
+                        content: turnContent.value,
+                    }),
+                });
+                if (data.status === 'ok') {
+                    turnContent.value = '';
+                    await refreshHistory();
+                } else {
+                    historyRaw.value = pretty(data);
+                }
+            }
+
+            async function refreshHistory() {
+                const data = await call(`/memory/history/${encodeURIComponent(sessionId.value)}`);
+                if (data.status === 'ok') {
+                    history.value = data.history || [];
+                    historyRaw.value = pretty({ count: data.count, session_id: data.session_id });
+                } else {
+                    history.value = [];
+                    historyRaw.value = pretty(data);
+                }
+            }
+
+            async function listSessions() {
+                const data = await call('/memory/sessions');
+                historyRaw.value = pretty(data);
+            }
+
+            async function clearSession() {
+                if (!confirm(`确定清空 session: ${sessionId.value} ?`)) return;
+                const data = await call(`/memory/session/${encodeURIComponent(sessionId.value)}`, { method: 'DELETE' });
+                history.value = [];
+                historyRaw.value = pretty(data);
+            }
+
+            async function doRecall() {
+                const parsed = parseFeatures(recallFeatures.value);
+                if (parsed.error) {
+                    recallResult.value = parsed.error + '\n（提示：也可以直接写 "亲子,儿童" 自动包成 tags）';
+                    return;
+                }
+                const features = parsed.value;
+                const data = await call('/memory/recall', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        query: recallQuery.value,
+                        user_id: userId.value,
+                        session_id: sessionId.value,
+                        top_k: recallTopK.value,
+                        user_features: features,
+                    }),
+                });
+                recallResult.value = pretty(data);
+            }
+
+            async function doReflect() {
+                reflectResult.value = '内省中，LLM 调用可能需要 10-30 秒...';
+                const data = await call('/memory/reflect', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        session_id: sessionId.value,
+                        user_id: userId.value,
+                        topic_subject: reflectTopic.value || '',
+                    }),
+                });
+                reflectResult.value = pretty(data);
+            }
+
+            async function listInsights() {
+                const data = await call(`/memory/insights/${encodeURIComponent(userId.value)}`);
+                if (data.status === 'ok') {
+                    insights.value = data.data || [];
+                    insightRaw.value = '';
+                } else {
+                    insights.value = [];
+                    insightRaw.value = pretty(data);
+                }
+            }
+
+            async function deleteInsight(id) {
+                const data = await call(`/memory/insight/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                if (data.status === 'ok') {
+                    await listInsights();
+                } else {
+                    insightRaw.value = pretty(data);
+                }
+            }
+
+            async function listGroups() {
+                const data = await call('/memory/groups');
+                groupResult.value = pretty(data);
+            }
+
+            async function doMatchGroup() {
+                const parsed = parseFeatures(matchFeatures.value);
+                if (parsed.error) {
+                    groupResult.value = parsed.error + '\n（提示：也可以直接写 "亲子,儿童" 自动包成 tags）';
+                    return;
+                }
+                const features = parsed.value || {};
+                const data = await call('/memory/group/match', {
+                    method: 'POST',
+                    body: JSON.stringify({ user_features: features }),
+                });
+                groupResult.value = pretty(data);
+            }
+
+            // 首次加载先拉一下状态
+            refreshStats();
+
+            return {
+                backend, sessionId, userId,
+                turnRole, turnContent, history, historyRaw,
+                recallQuery, recallTopK, recallFeatures, recallResult,
+                reflectTopic, reflectResult,
+                insights, insightRaw,
+                matchFeatures, groupResult,
+                statsRaw, statsOk, statsText,
+                refreshStats, addTurn, refreshHistory, listSessions, clearSession,
+                doRecall, doReflect,
+                listInsights, deleteInsight,
+                listGroups, doMatchGroup,
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

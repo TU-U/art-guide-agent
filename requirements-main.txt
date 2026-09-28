@@ -1,0 +1,51 @@
+# ============================================
+# Dependencies for main.py only
+# Web / local testing path:
+# FastAPI + Qwen Omni text reply + memory + RAG + Xunfei TTS
+#
+# Recommended Python version: 3.10+
+# Install with:
+#   pip install -r requirements-main.txt
+#
+# Not included here:
+# - ROS packages (rclpy, cv_bridge, sensor_msgs, std_msgs, message_filters)
+# - Hand / YOLO / vision-stream packages (mediapipe, ultralytics, opencv, aiohttp)
+#
+# CUDA torch:
+# This file is configured for the official PyTorch CUDA 12.6 wheels.
+# ============================================
+
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+# Web backend
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+python-multipart==0.0.9
+pydantic==1.10.15
+python-dotenv==1.0.1
+
+# Model API clients
+openai==1.35.13
+requests==2.32.3
+
+# Xunfei TTS client
+websocket-client==1.8.0
+
+# Core runtime
+numpy==1.26.4
+tqdm==4.66.5
+typing-extensions==4.12.2
+protobuf==3.20.3
+torch==2.7.0+cu126
+
+# Memory + RAG runtime
+chromadb==0.4.24
+jieba==0.42.1
+rank-bm25==0.2.2
+sentence-transformers==3.0.1
+transformers==4.51.3
+tokenizers==0.21.1
+huggingface-hub==0.30.2
+
+# Optional helper for local data conversion / maintenance
+openpyxl==3.1.5

@@ -1,0 +1,51 @@
+# ============================================
+# Runtime requirements for current main chain
+# Recommended Python version: 3.10
+#
+# Current main chain:
+# Qwen Omni Flash text reply -> Xunfei TTS
+# FastAPI backend + memory + RAG retriever
+#
+# Notes:
+# 1. ROS packages such as rclpy / cv_bridge / sensor_msgs / std_msgs /
+#    message_filters are NOT installed by pip. They come from your ROS setup.
+# 2. If you need services/hand_stream.py in non-ROS preprocessing, the pip
+#    packages below include opencv / mediapipe / ultralytics, but ROS still
+#    needs to be installed separately.
+# ============================================
+
+# Core web / API
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+pydantic==1.10.15
+python-dotenv==1.0.1
+requests==2.32.3
+openai==1.35.13
+
+# TTS
+websocket-client==1.8.0
+
+# Basic utilities
+numpy==1.26.4
+tqdm==4.66.5
+typing-extensions==4.12.2
+protobuf==3.20.3
+
+# RAG / retrieval / memory
+chromadb==0.4.24
+jieba==0.42.1
+rank-bm25==0.2.2
+sentence-transformers==3.0.1
+transformers==4.51.3
+tokenizers==0.21.1
+huggingface-hub==0.30.2
+
+# Data ingest helpers
+pandas==2.2.2
+openpyxl==3.1.5
+
+# Vision-side pip packages
+opencv-python==4.10.0.84
+mediapipe==0.10.14
+ultralytics==8.3.28
+aiohttp==3.10.10

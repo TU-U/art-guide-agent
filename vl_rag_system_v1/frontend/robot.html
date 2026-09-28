@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机器人链路调试页</title>
+    <style>
+        :root {
+            --bg: #f5f7f6;
+            --panel: #ffffff;
+            --line: #dce3df;
+            --text: #18231f;
+            --muted: #65736d;
+            --accent: #276749;
+            --accent-soft: #e6f4ee;
+            --error: #b42318;
+            --shadow: 0 18px 44px rgba(27, 43, 36, 0.10);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(180deg, #f8faf9 0%, var(--bg) 100%);
+        }
+
+        .page {
+            width: min(1380px, calc(100vw - 32px));
+            margin: 0 auto;
+            padding: 24px 0 36px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            line-height: 1.2;
+            font-weight: 650;
+        }
+
+        .subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .button {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 10px 13px;
+            background: var(--panel);
+            color: var(--text);
+            font: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .button.primary {
+            border-color: rgba(39, 103, 73, 0.28);
+            background: var(--accent);
+            color: #ffffff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.55fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .vision-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.72fr);
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: start;
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .panel-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .chip {
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid rgba(39, 103, 73, 0.16);
+            white-space: nowrap;
+        }
+
+        .chip.error {
+            color: var(--error);
+            background: #fff0ed;
+            border-color: rgba(180, 35, 24, 0.18);
+        }
+
+        .status-list {
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .vision-panel {
+            margin-top: 16px;
+        }
+
+        .video-frame {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: contain;
+            background: #101816;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .vision-meta {
+            padding: 12px 14px 14px;
+            display: grid;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .snapshot-list {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+        }
+
+        .snapshot {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fbfcfb;
+        }
+
+        .snapshot img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: contain;
+            background: #101816;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .snapshot-meta {
+            padding: 10px 11px;
+            display: grid;
+            gap: 5px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--muted);
+        }
+
+        .snapshot-meta strong {
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .status-item {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 11px 12px;
+            background: #fbfcfb;
+        }
+
+        .status-item strong {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .status-item span {
+            display: block;
+            font-size: 14px;
+            line-height: 1.55;
+            word-break: break-word;
+        }
+
+        .dialogue {
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .log-list {
+            padding: 14px;
+            display: grid;
+            gap: 8px;
+            max-height: 320px;
+            overflow: auto;
+        }
+
+        .log-line {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 9px 10px;
+            background: #fbfcfb;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .log-line.warning {
+            background: #fff8e8;
+            border-color: #f1d78c;
+        }
+
+        .log-line.error {
+            background: #fff0ed;
+            border-color: rgba(180, 35, 24, 0.18);
+        }
+
+        .turn {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px 14px;
+            background: #fbfcfb;
+        }
+
+        .turn.user {
+            background: #f1f7f4;
+            border-color: rgba(39, 103, 73, 0.18);
+        }
+
+        .turn.assistant {
+            background: #ffffff;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 7px;
+        }
+
+        .content {
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.75;
+            font-size: 15px;
+        }
+
+        .empty {
+            padding: 28px 18px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        @media (max-width: 840px) {
+            .topbar {
+                flex-direction: column;
+            }
+
+            .actions {
+                justify-content: flex-start;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .vision-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <header class="topbar">
+            <div>
+                <h1>机器人链路调试页</h1>
+                <p class="subtitle">
+                    这里只显示 <code>start_all.sh</code> 启动后的机器人语音链路文本。
+                    页面每 3 秒读取一次 <code>/robot/dialogue</code>。
+                </p>
+            </div>
+            <div class="actions">
+                <button id="refreshBtn" class="button primary" type="button">刷新</button>
+                <a class="button" href="/">返回知识问答页</a>
+                <a class="button" href="/robot/dialogue?limit=16" target="_blank" rel="noopener">查看原始 JSON</a>
+            </div>
+        </header>
+
+        <section class="vision-grid">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>指向识别视频流</h2>
+                    <span id="pointChip" class="chip">8081/video</span>
+                </div>
+                <img id="pointVideo" class="video-frame" alt="指向识别视频流">
+                <div class="vision-meta">
+                    <span>视频流来自 <code>point/hand_stream.py</code>。</span>
+                    <a href="http://192.168.31.43:8081/pointing_result" target="_blank" rel="noopener">查看指向识别 JSON</a>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>图片刷新观察</h2>
+                    <span class="chip">no-store</span>
+                </div>
+                <div class="snapshot-list">
+                    <article class="snapshot">
+                        <img id="pointImage" alt="当前 latest.jpg">
+                        <div class="snapshot-meta">
+                            <strong>当前 latest.jpg</strong>
+                            <span id="pointImageTime">存入时间：等待数据</span>
+                            <span id="pointImagePath">路径：等待数据</span>
+                        </div>
+                    </article>
+                    <article class="snapshot">
+                        <img id="vlmImage" alt="最近传入 VLM 的图片">
+                        <div class="snapshot-meta">
+                            <strong>最近传入 VLM 的图片</strong>
+                            <span id="vlmImageTime">快照时间：等待数据</span>
+                            <span id="vlmImagePath">路径：等待数据</span>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </section>
+
+        <section class="grid">
+            <aside>
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>链路状态</h2>
+                        <span id="statusChip" class="chip">连接中</span>
+                    </div>
+                    <div class="status-list">
+                        <div class="status-item">
+                            <strong>机器人会话</strong>
+                            <span id="sessionId">等待数据</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>运行状态</strong>
+                            <span id="robotStatus">等待数据</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>模型</strong>
+                            <span id="modelName">等待数据</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>输入来源</strong>
+                            <span id="inputSource">等待数据</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>最近同步</strong>
+                            <span id="updatedAt">等待数据</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel vision-panel">
+                    <div class="panel-header">
+                        <h2>视觉摘要记忆</h2>
+                        <span id="visualSummaryChip" class="chip">等待</span>
+                    </div>
+                    <div class="status-list">
+                        <div class="status-item">
+                            <strong>摘要时间</strong>
+                            <span id="visualSummaryTime">等待数据</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>主要对象</strong>
+                            <span id="visualSummaryTarget">等待数据</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>主要内容</strong>
+                            <span id="visualSummaryContent">等待数据</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>图片路径</strong>
+                            <span id="visualSummaryImage">等待数据</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel vision-panel">
+                    <div class="panel-header">
+                        <h2>链路日志</h2>
+                        <span id="eventCountChip" class="chip">0 条</span>
+                    </div>
+                    <div id="eventLog" class="log-list">
+                        <div class="empty">等待机器人链路事件。</div>
+                    </div>
+                </section>
+            </aside>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>语音交互文字记录</h2>
+                    <span id="countChip" class="chip">0 条</span>
+                </div>
+                <div id="dialogue" class="dialogue">
+                    <div class="empty">正在读取机器人链路对话。</div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const state = {
+            timer: null,
+        };
+
+        const pointVideoUrl = `${window.location.protocol}//${window.location.hostname}:8081/video`;
+        const pointImageUrl = "/robot/point-image";
+        const vlmImageUrl = "/robot/vlm-image";
+
+        function formatTime(value) {
+            if (!value) return "暂无";
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleString("zh-CN", { hour12: false });
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value || "暂无";
+        }
+
+        function setStatus(ok, text) {
+            const chip = document.getElementById("statusChip");
+            chip.textContent = text;
+            chip.className = ok ? "chip" : "chip error";
+        }
+
+        function renderDialogue(history) {
+            const root = document.getElementById("dialogue");
+            const countChip = document.getElementById("countChip");
+            countChip.textContent = `${history.length} 条`;
+
+            if (!history.length) {
+                root.innerHTML = '<div class="empty">暂无机器人语音交互记录。请先启动 start_all.sh 并和机器人说话。</div>';
+                return;
+            }
+
+            root.innerHTML = history.map((item) => {
+                const role = item.role === "assistant" ? "assistant" : "user";
+                const label = role === "assistant" ? "机器人" : "用户";
+                const content = String(item.content || "").replace(/[&<>"']/g, (ch) => ({
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#39;",
+                }[ch]));
+                return `
+                    <article class="turn ${role}">
+                        <div class="meta">${label} · ${formatTime(item.timestamp)}</div>
+                        <div class="content">${content}</div>
+                    </article>
+                `;
+            }).join("");
+        }
+
+        function renderEvents(events) {
+            const root = document.getElementById("eventLog");
+            const countChip = document.getElementById("eventCountChip");
+            countChip.textContent = `${events.length} 条`;
+
+            if (!events.length) {
+                root.innerHTML = '<div class="empty">等待机器人链路事件。</div>';
+                return;
+            }
+
+            root.innerHTML = events.slice().reverse().map((item) => {
+                const level = item.level || "info";
+                const message = String(item.message || "").replace(/[&<>"']/g, (ch) => ({
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#39;",
+                }[ch]));
+                return `
+                    <div class="log-line ${level}">
+                        <div class="meta">${formatTime(item.time)} · ${level}</div>
+                        <div>${message}</div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function renderVisualSummary(summary) {
+            const chip = document.getElementById("visualSummaryChip");
+            if (!summary) {
+                chip.textContent = "等待";
+                setText("visualSummaryTime", "等待数据");
+                setText("visualSummaryTarget", "等待数据");
+                setText("visualSummaryContent", "等待数据");
+                setText("visualSummaryImage", "等待数据");
+                return;
+            }
+            chip.textContent = "已写入";
+            setText("visualSummaryTime", formatTime(summary.timestamp));
+            setText("visualSummaryTarget", summary.target_object || summary.target_class || "未知");
+            setText("visualSummaryContent", summary.main_content || summary.scene_summary || "暂无");
+            setText("visualSummaryImage", summary.image_path || "暂无");
+        }
+
+        function refreshImage(id, url, exists) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (!exists) {
+                el.removeAttribute("src");
+                return;
+            }
+            el.src = `${url}?t=${Date.now()}`;
+        }
+
+        async function fetchRobotDialogue() {
+            try {
+                const response = await fetch("/robot/dialogue?limit=32", { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const payload = await response.json();
+                const data = payload.data || {};
+                const available = Boolean(data.available);
+
+                setStatus(available, available ? "已连接" : "等待机器人链路");
+                setText("sessionId", data.session_id || "暂无");
+                setText("robotStatus", data.robot_status || "offline");
+                setText("modelName", [data.model_provider, data.model_name].filter(Boolean).join(" / ") || "暂无");
+                setText("inputSource", data.input_source || "暂无");
+                setText("updatedAt", formatTime(data.updated_at));
+                setText("pointImageTime", `存入时间：${formatTime(data.point_image?.mtime)}`);
+                setText("pointImagePath", `路径：${data.point_image?.path || "暂无"}`);
+                setText("vlmImageTime", `快照时间：${formatTime(data.vlm_image?.mtime)}`);
+                setText("vlmImagePath", `路径：${data.vlm_image?.path || data.vlm_image_path || "暂无"}`);
+                refreshImage("pointImage", pointImageUrl, Boolean(data.point_image?.exists));
+                refreshImage("vlmImage", vlmImageUrl, Boolean(data.vlm_image?.exists));
+                renderVisualSummary(data.visual_summary || null);
+                renderDialogue(data.history || []);
+                renderEvents(data.events || []);
+            } catch (error) {
+                setStatus(false, "读取失败");
+                renderVisualSummary(null);
+                renderDialogue([]);
+                renderEvents([]);
+            }
+        }
+
+        document.getElementById("refreshBtn").addEventListener("click", fetchRobotDialogue);
+        document.getElementById("pointVideo").src = pointVideoUrl;
+        fetchRobotDialogue();
+        state.timer = window.setInterval(fetchRobotDialogue, 3000);
+    </script>
+</body>
+</html>

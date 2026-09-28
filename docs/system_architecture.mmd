@@ -1,0 +1,32 @@
+flowchart LR
+    A[语音输入<br/>voice_to_text.py] -->|ROS Topic<br/>/asr/user_text| B[RobotBrain<br/>local_model_processor.py]
+
+    V[视觉输入<br/>相机/指向识别] -->|latest.jpg<br/>bbox/红框| B
+
+    B -->|记忆写入/召回| M[Memory<br/>短期历史 + 长期记忆]
+    M -->|memory_context<br/>历史/事实/事件/视觉摘要| B
+
+    B -->|纯文本/图文请求| L[模型服务<br/>LLM/VLM Service]
+    L -->|Qwen Omni 回复| B
+
+    B -->|切句后文本| T[TTS Service<br/>讯飞 API]
+    T -->|音频文件 mp3| B
+    B -->|ROS Topic<br/>/xunfei/tts_play| P[机器人播放器]
+
+    B -->|状态文件/运行日志| F[前端调试<br/>main.py + frontend]
+    V -->|视频画面/图片快照| F
+    M -->|视觉摘要/记忆状态| F
+
+    classDef input fill:#e8f3ff,stroke:#3178c6,color:#111;
+    classDef core fill:#fff4df,stroke:#c47f00,color:#111;
+    classDef model fill:#f2edff,stroke:#7656c9,color:#111;
+    classDef memory fill:#eef8ef,stroke:#4c9a57,color:#111;
+    classDef output fill:#ffecec,stroke:#c44,color:#111;
+    classDef frontend fill:#f7f7f7,stroke:#666,color:#111;
+
+    class A,V input;
+    class B core;
+    class L model;
+    class M memory;
+    class T,P output;
+    class F frontend;

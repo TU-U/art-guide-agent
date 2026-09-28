@@ -1,0 +1,31 @@
+flowchart LR
+    U[用户输入/机器人回复] --> ST[短期对话历史]
+    U --> EX[记忆抽取]
+
+    EX --> F[事实记忆]
+    EX --> E[事件记忆]
+    EX --> I[见解记忆]
+    EX --> V[视觉摘要记忆]
+    EX --> P[用户画像/偏好记忆]
+
+    F --> DB[(长期记忆库<br/>ChromaDB/JSON)]
+    E --> DB
+    I --> DB
+    V --> DB
+    P --> DB
+
+    Q[当前问题] --> R[记忆召回]
+    ST --> R
+    DB --> R
+    R --> C[记忆上下文 memory_context]
+    C --> M[LLM / VLM 生成回复]
+
+    classDef short fill:#e8f3ff,stroke:#3178c6,color:#111;
+    classDef long fill:#eef8ef,stroke:#4c9a57,color:#111;
+    classDef process fill:#fff4df,stroke:#c47f00,color:#111;
+    classDef model fill:#f2edff,stroke:#7656c9,color:#111;
+
+    class ST short;
+    class F,E,I,V,P,DB long;
+    class EX,R,C process;
+    class M model;

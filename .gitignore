@@ -1,0 +1,25 @@
+*.gguf
+*.pth
+*.safetensors
+*.tar.gz
+*.zip
+*.mp3
+venv/
+.idea/
+*.pyc
+__pycache__/
+.env
+
+# Data and logs
+data/
+rviz_captured_images/
+logs/
+service.log
+.vscode/
+.DS_Store
+
+# Local embedding models
+models/
+
+# Weekly reports
+周报/
